@@ -1,0 +1,8 @@
+[package]
+name = "rust-automotive"
+version = "0.1.0"
+edition = "2021"
+description = "Example automotive software components in Rust: CAN, OBD-II, BMS and cruise control"
+license = "MIT"
+
+[dependencies]
