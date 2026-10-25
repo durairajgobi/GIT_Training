@@ -1,0 +1,17 @@
+# Engineers: SSH certificate (sshd) + RADIUS OTP, TACACS+ authorisation
+# and accounting, LDAP group membership. All network modules time out
+# fast so a dead backend cannot stall a field diagnosis session.
+auth       required     pam_faillock.so preauth deny=5 unlock_time=900
+auth       [success=2 default=ignore] pam_radius_auth.so conf=/etc/pam_radius_auth.conf
+auth       [success=1 default=ignore] pam_tacplus.so include=/etc/tacplus.conf
+auth       requisite    pam_deny.so
+auth       required     pam_faillock.so authsucc
+
+account    required     pam_nologin.so
+account    [success=1 default=ignore] pam_tacplus.so include=/etc/tacplus.conf service=tcu protocol=ssh
+account    required     pam_ldap.so
+account    required     pam_access.so
+
+session    required     pam_limits.so
+session    optional     pam_tacplus.so include=/etc/tacplus.conf service=tcu protocol=ssh
+session    required     pam_unix.so

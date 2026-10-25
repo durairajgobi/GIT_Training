@@ -1,0 +1,14 @@
+[Unit]
+Description=Passenger Wi-Fi hotspot (SoftAP + LTE tethering)
+After=ltecm.service network-pre.target
+Wants=ltecm.service
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/tcu-hotspot-up start
+ExecStop=/usr/sbin/tcu-hotspot-up stop
+ExecReload=/usr/sbin/tcu-hotspot-up reload
+PIDFile=/run/tcu-hotspot/hostapd.pid
+
+[Install]
+WantedBy=multi-user.target

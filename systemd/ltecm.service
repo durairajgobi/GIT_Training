@@ -1,0 +1,18 @@
+[Unit]
+Description=LTE connection manager
+After=dev-ttyUSB2.device
+BindsTo=dev-ttyUSB2.device
+
+[Service]
+EnvironmentFile=/etc/tcu/vehicle.env
+ExecStart=/usr/sbin/ltecm -d /dev/ttyUSB2 -a ${TCU_APN} -H /etc/tcu/ltecm-netif-hook
+Restart=always
+RestartSec=2
+# Needs to configure wwan0 through the hook
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW
+NoNewPrivileges=yes
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=TCU platform power manager
+DefaultDependencies=no
+After=sysinit.target
+
+[Service]
+EnvironmentFile=/etc/tcu/vehicle.env
+ExecStart=/usr/sbin/tcu-pmd -g ${TCU_IGN_GPIO} -b ${TCU_BATT_IIO} -k ${TCU_BATT_DIVIDER}
+Restart=always
+RuntimeDirectory=tcu
+RuntimeDirectoryPreserve=yes
+
+[Install]
+WantedBy=sysinit.target

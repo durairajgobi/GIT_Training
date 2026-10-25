@@ -1,0 +1,16 @@
+[Unit]
+Description=Bluetooth phone reconnection manager
+Requires=bluetooth.service
+After=bluetooth.service tcu-pmd.service
+
+[Service]
+EnvironmentFile=/etc/tcu/vehicle.env
+ExecStart=/usr/sbin/btmgr -a hci0 -d ${TCU_BT_PHONE}
+Restart=on-failure
+DynamicUser=yes
+SupplementaryGroups=bluetooth ecall
+NoNewPrivileges=yes
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

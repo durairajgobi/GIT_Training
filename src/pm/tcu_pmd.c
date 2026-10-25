@@ -28,7 +28,7 @@
 
 extern char **environ;
 
-#define ECALL_FLAG "/run/ecalld.active"
+#define ECALL_FLAG "/run/ecalld/active"
 #define IGNITION_EXPORT "/run/tcu/ignition"
 #define KEEPALIVE_S 3600     /* RTC wake for fleet heartbeat */
 #define RESUME_HOLD_MS 15000 /* time for apps to grab a wakelock after wake */

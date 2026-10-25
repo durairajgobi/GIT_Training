@@ -1,0 +1,3 @@
+Targets:
+    tcu-image       production image (no debug access, telnet absent)
+    tcu-image-dev   adds debug tools, telnetd and root login for the lab

@@ -1,0 +1,8 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# dnsmasq dhcp-script: $1 = add|old|del, $2 = MAC, $3 = IP.
+# Per-passenger quota/limit rules are keyed on the leased IP, so re-render
+# the ruleset whenever a lease appears or goes away.
+case "$1" in
+add|old|del) exec /usr/sbin/tcu-hotspot-up reload ;;
+esac

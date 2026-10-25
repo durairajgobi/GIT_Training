@@ -63,11 +63,11 @@ endif()
 
 install(TARGETS ${TCU_BINS} RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR})
 install(DIRECTORY systemd/ DESTINATION lib/systemd/system FILES_MATCHING PATTERN "*.service")
-install(PROGRAMS src/hotspot/hotspot_policy.py src/hotspot/captive_portal.py
+install(PROGRAMS src/hotspot/hotspot_policy.py src/hotspot/captive_portal.py src/hotspot/lease-hook
         DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/tcu-hotspot)
 install(PROGRAMS src/hotspot/hotspot-up.sh DESTINATION ${CMAKE_INSTALL_SBINDIR}
         RENAME tcu-hotspot-up)
-install(DIRECTORY config/ DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/tcu)
+install(DIRECTORY config/ DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/tcu USE_SOURCE_PERMISSIONS)
 
 if(TCU_BUILD_TESTS)
   enable_testing()

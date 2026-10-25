@@ -1,0 +1,18 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# udhcpc event script for the LTE interface (raw-IP wwan0).
+RESOLV=/run/tcu/resolv.wwan
+case "$1" in
+deconfig)
+	ip addr flush dev "$interface"
+	;;
+bound|renew)
+	ip addr flush dev "$interface"
+	ip addr add "$ip/${mask:-32}" dev "$interface"
+	ip route replace default dev "$interface" metric 100
+	mkdir -p /run/tcu
+	: > "$RESOLV.tmp"
+	for d in $dns; do echo "nameserver $d" >> "$RESOLV.tmp"; done
+	mv "$RESOLV.tmp" "$RESOLV"
+	;;
+esac

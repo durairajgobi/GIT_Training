@@ -1,0 +1,16 @@
+[Unit]
+Description=TCU container workloads
+Requires=docker.service
+After=docker.service tcu-hotspot.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/etc/tcu/containers
+# Images are preloaded into the A/B rootfs by OTA; never pulled on-road
+ExecStartPre=/bin/sh -c 'for i in /usr/share/tcu/images/*.tar; do [ -e "$i" ] && docker load -i "$i"; done; true'
+ExecStart=/usr/bin/docker compose up -d --no-build --pull never
+ExecStop=/usr/bin/docker compose down
+
+[Install]
+WantedBy=multi-user.target
