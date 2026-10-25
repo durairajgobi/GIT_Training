@@ -1,0 +1,42 @@
+# Containerised TCU workloads. Safety- and platform-critical services
+# (ecalld, ltecm, tcu-pmd, btmgr) stay native systemd services; anything
+# passenger-facing or third-party runs here with minimal privileges.
+services:
+  captive-portal:
+    image: tcu/captive-portal:1.0
+    build:
+      context: ..
+      dockerfile: docker/captive-portal/Dockerfile
+    network_mode: host          # sees ap0, /proc/net/arp and the host nftables
+    cap_drop: [ALL]
+    cap_add: [NET_ADMIN]        # nft add element ... authorized
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 64m
+    pids_limit: 64
+    cpus: 0.25
+    restart: unless-stopped
+    logging:
+      driver: journald
+
+  fleet-agent:
+    # Third-party fleet-management agent (vendor image), reaches the
+    # backend over the TCU's mTLS proxy only.
+    image: vendor/fleet-agent:stable
+    networks: [fleet]
+    cap_drop: [ALL]
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 128m
+    pids_limit: 128
+    cpus: 0.5
+    restart: unless-stopped
+    logging:
+      driver: journald
+
+networks:
+  fleet:
+    driver: bridge
+    internal: true              # no direct route to wwan0

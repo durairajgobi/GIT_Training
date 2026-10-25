@@ -1,0 +1,13 @@
+{
+  "ap_if": "ap0",
+  "wan_if": "wwan0",
+  "portal_ip": "192.168.50.1",
+  "portal_port": 8080,
+  "subnet": "192.168.50.0/24",
+  "default_quota_mb": 1024,
+  "default_rate_kbps": 4096,
+  "passengers": [
+    { "mac": "02:00:00:00:00:01", "exempt": true },
+    { "mac": "02:00:00:00:00:02", "quota_mb": 2048, "rate_kbps": 8192 }
+  ]
+}

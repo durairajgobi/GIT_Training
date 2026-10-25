@@ -2,7 +2,7 @@
 /*
  * ecalld - in-vehicle eCall daemon.
  *
- *   ecalld -d /dev/ttyUSB3 -v <VIN> [-t] [-c /run/ecalld.sock]
+ *   ecalld -d /dev/ttyUSB3 -v <VIN> [-t] [-c /run/ecalld/ctl]
  *
  * Inputs:
  *   - control socket (SOCK_DGRAM): "manual", "auto", "cancel" from the
@@ -10,7 +10,7 @@
  *   - modem AT port: call progress and MSD-transfer URCs
  *   - /run/tcu/position: "<lat_mas> <lon_mas> <dir> <trusted>" from GNSS
  *
- * While a session is active /run/ecalld.active exists; tcu-pmd holds the
+ * While a session is active /run/ecalld/active exists; tcu-pmd holds the
  * system awake and btmgr suspends reconnection attempts while it does.
  */
 #include <errno.h>
@@ -33,7 +33,7 @@
 #include "tcu_log.h"
 #include "tty.h"
 
-#define ACTIVE_FLAG "/run/ecalld.active"
+#define ACTIVE_FLAG "/run/ecalld/active"
 #define POSITION_FILE "/run/tcu/position"
 
 /*
@@ -243,7 +243,7 @@ int main(int argc, char **argv)
 		.callback_window_ms = 60 * 60 * 1000,
 	};
 	struct ecalld d = { 0 };
-	const char *dev = "/dev/ttyUSB3", *ctl = "/run/ecalld.sock";
+	const char *dev = "/dev/ttyUSB3", *ctl = "/run/ecalld/ctl";
 	int opt;
 
 	d.msd.vehicle_type = MSD_VEH_HEAVY_DUTY_N3;

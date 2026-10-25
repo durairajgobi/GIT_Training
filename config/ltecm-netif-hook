@@ -1,0 +1,16 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# Called by ltecm with "up" or "down" for the LTE data interface.
+IF=${LTE_IF:-wwan0}
+case "$1" in
+up)
+	ip link set "$IF" up
+	# udhcpc writes the default route and /run/tcu/resolv.wwan via its script
+	udhcpc -i "$IF" -q -n -t 5 -s /etc/tcu/udhcpc-wwan.script
+	systemctl reload --no-block tcu-hotspot.service 2>/dev/null || true
+	;;
+down)
+	ip addr flush dev "$IF"
+	ip link set "$IF" down
+	;;
+esac

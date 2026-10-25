@@ -1,0 +1,26 @@
+[Unit]
+Description=eCall in-vehicle system
+After=dev-ttyUSB3.device
+BindsTo=dev-ttyUSB3.device
+
+[Service]
+EnvironmentFile=/etc/tcu/vehicle.env
+ExecStart=/usr/sbin/ecalld -d /dev/ttyUSB3 -v ${TCU_VIN}
+Restart=always
+RestartSec=1
+# Safety function: never killed for memory pressure, highest CPU weight
+OOMScoreAdjust=-1000
+CPUWeight=1000
+User=ecall
+Group=ecall
+SupplementaryGroups=dialout
+# /run/ecalld/{ctl,active}; the directory is group-readable for btmgr/tcu-pmd
+RuntimeDirectory=ecalld
+RuntimeDirectoryMode=0750
+ProtectSystem=strict
+ProtectHome=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,16 @@
+# NXP i.MX8M Plus EVK as reference board; product boards add their own
+# machine conf in the BSP layer. The legacy i.MX6 product uses
+# MACHINE = "imx6qdlsabresd" with the OP-TEE port in this layer.
+MACHINE ??= "imx8mp-lpddr4-evk"
+DISTRO ?= "tcu"
+ACCEPT_FSL_EULA = "1"
+
+PACKAGE_CLASSES ?= "package_ipk"
+IMAGE_FSTYPES = "wic.zst ext4"
+
+# Local development: build tcu-apps from your checkout instead of git
+#INHERIT += "externalsrc"
+#EXTERNALSRC:pn-tcu-apps = "/path/to/GIT_Training"
+
+BB_NUMBER_THREADS ?= "${@oe.utils.cpu_count()}"
+CONF_VERSION = "2"

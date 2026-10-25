@@ -16,7 +16,7 @@
 #include "tcu_log.h"
 
 #define BLUEZ "org.bluez"
-#define ECALL_FLAG "/run/ecalld.active"
+#define ECALL_FLAG "/run/ecalld/active"
 
 struct btmgr {
 	GDBusConnection *bus;
