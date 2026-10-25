@@ -1,0 +1,16 @@
+{
+  "name": "lab1-shieldbox",
+  "dut":           { "host": "10.88.0.1", "user": "root", "key": "~/.ssh/tcu_lab" },
+  "head_unit":     { "host": "10.88.0.20", "user": "root", "iface": "wlan0" },
+  "legacy_client": { "host": "10.88.0.21", "user": "root", "iface": "wlan0" },
+  "aps": [
+    { "host": "10.88.0.31", "bssid": "02:a0:00:00:00:01", "attenuator_cmd": "attn-cli --port 1 set {db}" },
+    { "host": "10.88.0.32", "bssid": "02:a0:00:00:00:02", "attenuator_cmd": "attn-cli --port 2 set {db}" }
+  ],
+  "sniffer": { "host": "10.88.0.40", "iface": "mon0" },
+  "hotspot_channels": [1, 6, 11, 36, 44, 149, 157],
+  "roam_channel": 36,
+  "bt_phone": "AA:BB:CC:00:00:01",
+  "passphrase": "lab-passphrase-1",
+  "download_url": "http://192.168.200.1/100MB.bin"
+}

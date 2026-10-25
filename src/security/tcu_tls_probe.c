@@ -3,10 +3,15 @@
  * tcu-tls-probe - check backend reachability with the production TLS
  * policy (used by field diagnostics and the HIL suite).
  *
- *   tcu-tls-probe -h host -p 443 -C ca.pem [-c dev.crt -k dev.key] [-o]
+ *   tcu-tls-probe -h host -p 443 -C ca.pem -c dev.crt -k dev.key [-o]
+ *
+ * The client certificate is mandatory: the backend requires mTLS and with
+ * TLS 1.3 a missing certificate is only rejected after the client
+ * considers the handshake complete, which would report a false "ok".
  */
 #include <getopt.h>
 #include <stdio.h>
+#include <syslog.h>
 
 #include "tls_client.h"
 
@@ -27,10 +32,11 @@ int main(int argc, char **argv)
 		default: return 2;
 		}
 	}
-	if (!cfg.host || !cfg.ca_file || (cfg.cert_file && !cfg.key_file)) {
-		fprintf(stderr, "usage: %s -h host [-p port] -C ca [-c cert -k key] [-o]\n", argv[0]);
+	if (!cfg.host || !cfg.ca_file || !cfg.cert_file || !cfg.key_file) {
+		fprintf(stderr, "usage: %s -h host [-p port] -C ca -c cert -k key [-o]\n", argv[0]);
 		return 2;
 	}
+	openlog("tcu-tls-probe", LOG_PERROR, LOG_USER);
 	if (tcu_tls_connect(&cfg, &t) != 0)
 		return 1;
 	printf("ok %s %s\n", SSL_get_version(t.ssl), SSL_get_cipher(t.ssl));
