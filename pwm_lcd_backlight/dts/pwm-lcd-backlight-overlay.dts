@@ -1,0 +1,29 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Example device-tree overlay for the PWM LCD backlight driver.
+ *
+ * Adjust the PWM controller phandle, channel and enable GPIO to match
+ * your board. Build with:
+ *   dtc -@ -I dts -O dtb -o pwm-lcd-backlight.dtbo pwm-lcd-backlight-overlay.dts
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pwm/pwm.h>
+
+&{/} {
+	lcd_backlight: lcd-backlight {
+		compatible = "training,pwm-lcd-backlight";
+
+		/* PWM controller, channel 0, 50000 ns period (20 kHz), normal polarity */
+		pwms = <&pwm 0 50000 0>;
+
+		/* Optional: GPIO that powers the backlight LED driver */
+		enable-gpios = <&gpio 18 GPIO_ACTIVE_HIGH>;
+
+		/* Optional: brightness scale and power-on level */
+		max-brightness = <255>;
+		default-brightness = <128>;
+	};
+};
