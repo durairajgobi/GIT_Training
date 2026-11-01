@@ -1,0 +1,8 @@
+{
+  "library": "Central Library",
+  "books": [
+    { "title": "The C++ Programming Language", "author": "Bjarne Stroustrup", "year": 2013, "available": true },
+    { "title": "Effective Modern C++", "author": "Scott Meyers", "year": 2014, "available": false }
+  ],
+  "open_hours": { "weekday": "9-18", "weekend": null }
+}
