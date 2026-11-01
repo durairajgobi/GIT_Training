@@ -1,0 +1,6 @@
+build/
+build-*/
+simple_chat
+simplechat_tests
+*.o
+*.log
