@@ -22,6 +22,7 @@ Design document: [docs/DESIGN.md](docs/DESIGN.md)
 | `docker/` | Container images and compose stack |
 | `systemd/`, `config/` | Service units and default configuration |
 | `tests/` | C unit tests, Python unit tests, HIL framework (`tcu_testkit`) and suites |
+| `devhal/` | User-space C middleware for device drivers: GPIO, I2C, SPI, UART, PWM, LCD backlight (`make -C devhal test`) |
 
 ## Host build and tests
 
