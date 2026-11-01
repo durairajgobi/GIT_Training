@@ -1,0 +1,26 @@
+# Section 14 - The Vector Store and Docker Setup
+# Starts Qdrant (vector database) and Ollama (embedding + chat models).
+#   docker compose up -d
+#   docker compose exec ollama ollama pull nomic-embed-text
+#   docker compose exec ollama ollama pull llama3.2
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    ports:
+      - "6333:6333"   # REST API + web dashboard at http://localhost:6333/dashboard
+      - "6334:6334"   # gRPC
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:0.5.4
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:
+  ollama_data:

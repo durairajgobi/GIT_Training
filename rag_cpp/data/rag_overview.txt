@@ -1,0 +1,22 @@
+Retrieval-Augmented Generation (RAG) combines a search step with a large language
+model. Instead of relying only on what the model memorised during training, the
+system first retrieves relevant passages from a private knowledge base and then
+asks the model to answer using those passages as context.
+
+An embedding is a fixed-length vector of floating point numbers that represents
+the meaning of a piece of text. Texts with similar meaning produce vectors that
+point in similar directions. The embedding model nomic-embed-text produces
+768-dimensional vectors.
+
+Cosine similarity measures the angle between two vectors: it is the dot product
+divided by the product of their lengths. A score of 1 means identical direction,
+0 means unrelated, and -1 means opposite.
+
+A vector store such as Qdrant indexes millions of embeddings with an approximate
+nearest neighbour algorithm called HNSW, so the most similar chunks can be found
+in milliseconds without comparing the query against every stored vector.
+
+The ingestion pipeline loads documents, splits them into overlapping chunks,
+embeds each chunk and upserts the vectors with their text as payload. The query
+pipeline embeds the question, searches the vector store for the top-k chunks and
+places them in the prompt sent to the language model.
