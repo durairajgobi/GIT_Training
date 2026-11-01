@@ -1,0 +1,55 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Example overlay: ILI9341 2.4" SPI TFT on a Raspberry Pi, SPI0 CE0.
+ *
+ *   Panel   Pi header
+ *   SCK  -> GPIO11 (pin 23)     MOSI -> GPIO10 (pin 19)
+ *   CS   -> GPIO8  (pin 24)     D/C  -> GPIO24 (pin 18)
+ *   RST  -> GPIO25 (pin 22)     LED  -> GPIO18 (pin 12)
+ *
+ * Change the GPIO numbers, rotation and SPI speed to match your board.
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2835";
+
+	/* spidev normally claims CE0: release it */
+	fragment@0 {
+		target = <&spidev0>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	/* Backlight LED switched by a GPIO (backlight class device) */
+	fragment@1 {
+		target-path = "/";
+		__overlay__ {
+			ili9341_backlight: ili9341-backlight {
+				compatible = "gpio-backlight";
+				gpios = <&gpio 18 0>;	/* GPIO_ACTIVE_HIGH */
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&spi0>;
+		__overlay__ {
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			display@0 {
+				compatible = "training,ili9341-drm";
+				reg = <0>;
+				spi-max-frequency = <32000000>;
+				dc-gpios = <&gpio 24 0>;	/* GPIO_ACTIVE_HIGH */
+				reset-gpios = <&gpio 25 1>;	/* GPIO_ACTIVE_LOW */
+				rotation = <90>;
+				backlight = <&ili9341_backlight>;
+			};
+		};
+	};
+};
