@@ -1,0 +1,10 @@
+prefix=@PREFIX@
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: devhal
+Description: User-space C middleware for Linux device drivers
+Version: @VERSION@
+Libs: -L${libdir} -ldevhal
+Libs.private: -lpthread
+Cflags: -I${includedir}
