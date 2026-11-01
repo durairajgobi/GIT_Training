@@ -1,0 +1,78 @@
+name: WritingAssistant CI
+
+on:
+  push:
+    paths:
+      - "WritingAssistant/**"
+      - ".github/workflows/writing-assistant-ci.yml"
+  pull_request:
+    paths:
+      - "WritingAssistant/**"
+      - ".github/workflows/writing-assistant-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.compiler }} / ${{ matrix.build_type }}${{ matrix.sanitize == 'ON' && ' + sanitizers' || '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { compiler: g++,     build_type: Release, sanitize: OFF }
+          - { compiler: g++,     build_type: Debug,   sanitize: ON }
+          - { compiler: clang++, build_type: Release, sanitize: OFF }
+    defaults:
+      run:
+        working-directory: WritingAssistant
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DWA_WARNINGS_AS_ERRORS=ON
+          -DWA_SANITIZE=${{ matrix.sanitize }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Unit and smoke tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Offline demo of all five features
+        run: |
+          WA=./build/writing_assistant
+          $WA --provider offline summarize --length short "C++ is fast. It is also complex. Many teams use it."
+          echo "teh report is definately done ." | $WA --provider offline proofread
+          $WA --provider offline tone --tone formal "hey, send me the file"
+          $WA --provider offline expand "dependency injection keeps code testable"
+          $WA --provider offline translate --lang French "Good morning"
+
+  live-api:
+    # Calls the real Claude API only when the repository has the secret set.
+    name: Live Claude API check
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    defaults:
+      run:
+        working-directory: WritingAssistant
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        if: env.ANTHROPIC_API_KEY != ''
+        run: cmake -S . -B build -DWA_BUILD_TESTS=OFF && cmake --build build --parallel
+      - name: Summarize with Claude
+        if: env.ANTHROPIC_API_KEY != ''
+        run: ./build/writing_assistant --provider anthropic --effort low --stats summarize --length short "Dependency injection passes an object its collaborators instead of letting it create them. This makes code easier to test because fakes can be supplied."
+      - name: Skipped
+        if: env.ANTHROPIC_API_KEY == ''
+        run: echo "ANTHROPIC_API_KEY secret not set; live API check skipped."
