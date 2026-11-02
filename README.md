@@ -22,6 +22,7 @@ Design document: [docs/DESIGN.md](docs/DESIGN.md)
 | `docker/` | Container images and compose stack |
 | `systemd/`, `config/` | Service units and default configuration |
 | `tests/` | C unit tests, Python unit tests, HIL framework (`tcu_testkit`) and suites |
+| `embedded_protocols/` | Portable C/C++ protocol stack: SPI, I2C/SMBus, UART, RS-232/422/485, Modbus RTU, CAN/CAN FD, ISO-TP, MCP2515, Ethernet, PTP (1588/802.1AS), TSN (Qbv/Qav/CB). See [its README](embedded_protocols/README.md) |
 
 ## Host build and tests
 

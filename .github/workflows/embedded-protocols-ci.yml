@@ -1,0 +1,64 @@
+name: Embedded Protocols CI
+
+on:
+  push:
+    paths:
+      - "embedded_protocols/**"
+      - ".github/workflows/embedded-protocols-ci.yml"
+  pull_request:
+    paths:
+      - "embedded_protocols/**"
+      - ".github/workflows/embedded-protocols-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host:
+    name: host ${{ matrix.cc }} / ${{ matrix.build_type }}${{ matrix.sanitize == 'ON' && ' + sanitizers' || '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { cc: gcc,   cxx: g++,     build_type: Release, sanitize: OFF }
+          - { cc: gcc,   cxx: g++,     build_type: Debug,   sanitize: ON }
+          - { cc: clang, cxx: clang++, build_type: Release, sanitize: OFF }
+    defaults:
+      run:
+        working-directory: embedded_protocols
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_C_COMPILER=${{ matrix.cc }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DEP_SANITIZE=${{ matrix.sanitize }}
+      - name: Build
+        run: cmake --build build -j
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  cortex-m:
+    name: cross-compile Cortex-M4 (arm-none-eabi-gcc)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: embedded_protocols
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi libnewlib-arm-none-eabi
+      - name: Compile core + STM32F4 port
+        run: |
+          mkdir -p out
+          for f in src/*.c ports/stm32f4/*.c; do
+            arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 \
+              -std=c11 -Os -ffunction-sections -fdata-sections \
+              -Wall -Wextra -Wconversion -Wno-sign-conversion -Werror \
+              -Iinclude -Iports/stm32f4 -c "$f" -o "out/$(basename "$f" .c).o"
+          done
+          arm-none-eabi-size out/*.o
