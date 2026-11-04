@@ -1,0 +1,52 @@
+name: Wi-Fi Manager CI
+
+on:
+  push:
+    paths:
+      - "wifi_manager/**"
+      - ".github/workflows/wifi-manager-ci.yml"
+  pull_request:
+    paths:
+      - "wifi_manager/**"
+      - ".github/workflows/wifi-manager-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.compiler }} / ${{ matrix.build_type }}${{ matrix.sanitize == 'ON' && ' + sanitizers' || '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { compiler: g++,     build_type: Release, sanitize: OFF }
+          - { compiler: g++,     build_type: Debug,   sanitize: ON }
+          - { compiler: clang++, build_type: Release, sanitize: OFF }
+    defaults:
+      run:
+        working-directory: wifi_manager
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DWIFIMGR_WARNINGS_AS_ERRORS=ON
+          -DWIFIMGR_SANITIZE=${{ matrix.sanitize }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Unit and end-to-end tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Shipped configuration is valid
+        run: ./build/wifimgrd --check-config -c config/wifimgr.conf
+
+      - name: Hook script lint
+        run: sh -n scripts/udhcpc-hook

@@ -17,6 +17,7 @@ Design document: [docs/DESIGN.md](docs/DESIGN.md)
 | `src/pm` | Power policy, `tcu-pmd` |
 | `src/security` | AF_ALG (kernel crypto) helpers, mTLS + OCSP client, `tcu-hash`, `tcu-tls-probe` |
 | `src/hotspot` | nftables per-passenger policy, captive portal, bring-up script |
+| `wifi_manager/` | C++17 Wi-Fi station manager: `wifimgrd` (wpa_supplicant control, DHCP, roaming) and `wifictl` — see its README |
 | `optee/` | OP-TEE keystore TA and client |
 | `meta-telematics/` | Yocto layer: distro, images, kernel/U-Boot/OP-TEE/BlueZ/OpenSSH/AAA recipes |
 | `docker/` | Container images and compose stack |

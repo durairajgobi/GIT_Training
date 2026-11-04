@@ -1,0 +1,55 @@
+#!/bin/sh
+# busybox udhcpc hook for wifimgrd.
+#
+# Applies the lease with iproute2 (address, default route, MTU, DNS) and
+# then reports the event to wifimgrd so the connection state machine knows
+# the interface has (or lost) an IPv4 address.
+#
+# udhcpc passes: $1 = deconfig|bound|renew|leasefail|nak and the
+# variables interface, ip, mask (prefix length), router, dns, domain, mtu.
+
+RESOLV_CONF="${RESOLV_CONF:-/etc/resolv.conf}"
+WIFICTL="${WIFICTL:-/usr/bin/wifictl}"
+METRIC="${METRIC:-600}"   # above wired/cellular defaults: Wi-Fi is preferred only if they are absent
+
+notify() {
+    "$WIFICTL" dhcp-event "$@" >/dev/null 2>&1 || logger -t udhcpc-hook "wifimgrd not reachable"
+}
+
+write_resolv() {
+    tmp="$RESOLV_CONF.wifimgr.$$"
+    {
+        [ -n "$domain" ] && echo "search $domain"
+        for s in $dns; do echo "nameserver $s"; done
+    } > "$tmp" && mv -f "$tmp" "$RESOLV_CONF"
+}
+
+case "$1" in
+    deconfig)
+        ip -4 addr flush dev "$interface"
+        ip link set dev "$interface" up
+        notify deconfig
+        ;;
+
+    bound|renew)
+        old_ip=$(ip -4 -o addr show dev "$interface" | awk '{print $4}' | cut -d/ -f1 | head -n1)
+        if [ "$old_ip" != "$ip" ]; then
+            ip -4 addr flush dev "$interface"
+        fi
+        ip -4 addr replace "$ip/${mask:-24}" ${broadcast:+broadcast "$broadcast"} dev "$interface"
+        [ -n "$mtu" ] && ip link set dev "$interface" mtu "$mtu"
+        ip -4 route flush dev "$interface" proto static 2>/dev/null
+        for r in $router; do
+            ip -4 route replace default via "$r" dev "$interface" metric "$METRIC" proto static
+            break
+        done
+        [ -n "$dns" ] && write_resolv
+        notify "$1" "$ip"
+        ;;
+
+    leasefail|nak)
+        notify "$1"
+        ;;
+esac
+
+exit 0

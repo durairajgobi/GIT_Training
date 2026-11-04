@@ -1,0 +1,38 @@
+[Unit]
+Description=Wi-Fi station manager
+Documentation=file:///usr/share/doc/wifi-manager/README.md
+Wants=wpa_supplicant@wlan0.service
+After=wpa_supplicant@wlan0.service network-pre.target
+Before=network.target
+
+[Service]
+Type=simple
+ExecStartPre=/usr/sbin/wifimgrd --check-config
+ExecStart=/usr/sbin/wifimgrd
+Restart=always
+RestartSec=2
+
+# /run/wifimgr: control socket and wpa_ctrl reply sockets.
+RuntimeDirectory=wifimgr
+RuntimeDirectoryMode=0750
+StateDirectory=wifimgr
+StateDirectoryMode=0700
+
+# The DHCP client and its hook configure addresses and routes.
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_NETLINK AF_INET AF_INET6 AF_PACKET
+RestrictRealtime=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+# Note: no PrivateTmp - wpa_supplicant must reach our sockets by path.
+
+[Install]
+WantedBy=multi-user.target
