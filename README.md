@@ -14,6 +14,7 @@ Design document: [docs/DESIGN.md](docs/DESIGN.md)
 | `src/ecall` | eCall state machine, MSD encoder, `ecalld` |
 | `src/lte` | AT parser, LTE connection state machine, `ltecm` |
 | `src/bt` | Reconnection policy, HFP 1.7 codec negotiation, `btmgr` (BlueZ D-Bus) |
+| `ble_manager/` | C++17 BLE manager library + `blemgrd` daemon (BlueZ D-Bus: central, GATT client/server, advertising, pairing agent); see [ble_manager/README.md](ble_manager/README.md) |
 | `src/pm` | Power policy, `tcu-pmd` |
 | `src/security` | AF_ALG (kernel crypto) helpers, mTLS + OCSP client, `tcu-hash`, `tcu-tls-probe` |
 | `src/hotspot` | nftables per-passenger policy, captive portal, bring-up script |

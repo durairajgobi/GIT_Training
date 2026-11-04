@@ -1,0 +1,31 @@
+[Unit]
+Description=BLE connection manager
+Documentation=file:///usr/share/doc/blemgr/README.md
+Requires=bluetooth.service dbus.service
+After=bluetooth.service dbus.service
+
+[Service]
+Type=notify
+ExecStart=/usr/sbin/blemgrd -c /etc/blemgr/blemgrd.conf
+Restart=on-failure
+RestartSec=2
+User=blemgr
+Group=bluetooth
+# Hardening: D-Bus is the only interface needed.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictRealtime=yes
+MemoryDenyWriteExecute=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

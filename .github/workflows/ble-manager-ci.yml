@@ -1,0 +1,49 @@
+name: BLE Manager CI
+
+on:
+  push:
+    paths:
+      - "ble_manager/**"
+      - ".github/workflows/ble-manager-ci.yml"
+  pull_request:
+    paths:
+      - "ble_manager/**"
+      - ".github/workflows/ble-manager-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.compiler }} / ${{ matrix.build_type }}${{ matrix.sanitize == 'ON' && ' + sanitizers' || '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { compiler: g++,     build_type: Release, sanitize: OFF }
+          - { compiler: g++,     build_type: Debug,   sanitize: ON }
+          - { compiler: clang++, build_type: Release, sanitize: OFF }
+    defaults:
+      run:
+        working-directory: ble_manager
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libglib2.0-dev dbus
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DBLEMGR_WARNINGS_AS_ERRORS=ON
+          -DBLEMGR_SANITIZE=${{ matrix.sanitize }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Unit + end-to-end tests (mock bluetoothd on a private bus)
+        run: ctest --test-dir build --output-on-failure
