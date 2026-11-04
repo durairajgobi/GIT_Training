@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CAPL keyword definition file",
+  "type": "object",
+  "properties": {
+    "$schema": { "type": "string" },
+    "keywords": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "kind": { "type": "string", "enum": ["keyword", "type", "event", "constant"], "default": "keyword" },
+          "description": { "type": "string" },
+          "snippet": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "functions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "returnType": { "type": "string" },
+          "category": { "type": "string" },
+          "description": { "type": "string" },
+          "deprecated": { "type": "string" },
+          "parameters": { "$ref": "#/definitions/parameters" },
+          "overloads": { "type": "array", "items": { "$ref": "#/definitions/parameters" } }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "definitions": {
+    "parameters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

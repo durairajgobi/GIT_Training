@@ -1,0 +1,308 @@
+{
+  "name": "capl-scripting",
+  "displayName": "CAPL Scripting",
+  "description": "Vector CAPL language support: syntax highlighting, completion, hover hints, signature help, inlay hints, outline, diagnostics and user-configurable keywords.",
+  "version": "1.0.0",
+  "publisher": "durairajgobi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/durairajgobi/GIT_Training.git",
+    "directory": "vscode-capl"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Linters"
+  ],
+  "keywords": [
+    "capl",
+    "canoe",
+    "canalyzer",
+    "vector",
+    "automotive",
+    "can",
+    "lin",
+    "flexray",
+    "ethernet"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "workspaceContains:**/*.{can,cin}"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "capl",
+        "aliases": [
+          "CAPL",
+          "capl"
+        ],
+        "extensions": [
+          ".can",
+          ".cin"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "capl",
+        "scopeName": "source.capl",
+        "path": "./syntaxes/capl.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "capl",
+        "path": "./snippets/capl.code-snippets"
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": [
+          "*.capl-keywords.json",
+          "capl-keywords.json"
+        ],
+        "url": "./schemas/capl-keywords.schema.json"
+      }
+    ],
+    "semanticTokenScopes": [
+      {
+        "language": "capl",
+        "scopes": {
+          "keyword": [
+            "keyword.control.capl"
+          ],
+          "type": [
+            "storage.type.capl"
+          ],
+          "function.defaultLibrary": [
+            "support.function.capl"
+          ],
+          "event": [
+            "keyword.other.event.capl"
+          ],
+          "enumMember": [
+            "constant.language.capl"
+          ]
+        }
+      }
+    ],
+    "commands": [
+      {
+        "command": "capl.reloadDefinitions",
+        "title": "Reload Keyword Definitions",
+        "category": "CAPL"
+      },
+      {
+        "command": "capl.addCustomKeyword",
+        "title": "Add Custom Keyword / Function…",
+        "category": "CAPL"
+      },
+      {
+        "command": "capl.createKeywordFile",
+        "title": "Create Keyword Definition File…",
+        "category": "CAPL"
+      },
+      {
+        "command": "capl.showKeywordDatabase",
+        "title": "Browse Keyword Database…",
+        "category": "CAPL"
+      },
+      {
+        "command": "capl.insertEventHandler",
+        "title": "Insert Event Handler…",
+        "category": "CAPL"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "capl.insertEventHandler",
+          "when": "editorLangId == capl"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "capl.insertEventHandler",
+          "when": "editorLangId == capl",
+          "group": "1_modification"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "CAPL",
+      "properties": {
+        "capl.customKeywords": {
+          "type": "array",
+          "default": [],
+          "markdownDescription": "Additional keywords, types, event selectors or constants. Each entry gets completion, hover text and (semantic) highlighting.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The keyword as written in CAPL."
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "keyword",
+                  "type",
+                  "event",
+                  "constant"
+                ],
+                "default": "keyword"
+              },
+              "description": {
+                "type": "string",
+                "description": "Hint shown on hover and in completion (Markdown)."
+              },
+              "snippet": {
+                "type": "string",
+                "description": "Optional VS Code snippet inserted on completion, e.g. \"on myEvent ${1:name}\\n{\\n\\t$0\\n}\"."
+              }
+            }
+          }
+        },
+        "capl.customFunctions": {
+          "type": "array",
+          "default": [],
+          "markdownDescription": "Additional functions (e.g. from your own `.cin` libraries, CAPL DLLs or newer CANoe releases). Each entry gets completion, hover, signature help and parameter inlay hints.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "returnType": {
+                "type": "string",
+                "default": "void"
+              },
+              "parameters": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "overloads": {
+                "type": "array",
+                "description": "Alternative parameter lists (same shape as `parameters`).",
+                "items": {
+                  "type": "array"
+                }
+              },
+              "description": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "deprecated": {
+                "type": "string",
+                "description": "If set, usages are reported with this message."
+              }
+            }
+          }
+        },
+        "capl.keywordFiles": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "markdownDescription": "JSON files with keyword/function definitions (see `CAPL: Create Keyword Definition File…`). Relative paths are resolved against each workspace folder. Files are watched and reloaded on change."
+        },
+        "capl.disabledBuiltins": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Names of built-in keywords or functions to hide from completion and hover."
+        },
+        "capl.deprecatedFunctions": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          },
+          "markdownDescription": "Map of function name → message. Calls are reported as deprecated, e.g. `{ \"getValue\": \"Use $sysvar syntax\" }`."
+        },
+        "capl.completion.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Offer keyword, function and symbol completion."
+        },
+        "capl.hover.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show hover hints for keywords and functions."
+        },
+        "capl.signatureHelp.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show parameter hints while typing function calls."
+        },
+        "capl.inlayHints.parameterNames": {
+          "type": "string",
+          "enum": [
+            "none",
+            "literals",
+            "all"
+          ],
+          "default": "literals",
+          "markdownDescription": "Show parameter-name inlay hints in calls: `none`, only for literal arguments (`literals`) or for every argument (`all`)."
+        },
+        "capl.diagnostics.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Report structural problems (unbalanced braces, duplicate blocks, deprecated calls)."
+        },
+        "capl.diagnostics.unknownFunctions": {
+          "type": "boolean",
+          "default": false,
+          "description": "Report calls to functions that are neither built in, configured, nor defined in the open file and its includes."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "npm run compile && node --test test/*.test.js",
+    "package": "npx @vscode/vsce@3 package",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.9.3",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
+  }
+}

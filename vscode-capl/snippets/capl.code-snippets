@@ -1,0 +1,103 @@
+{
+  "CAPL node skeleton": {
+    "prefix": "capl-node",
+    "description": "Encoding header, includes, variables, on start",
+    "body": [
+      "/*@!Encoding:65001*/",
+      "includes",
+      "{",
+      "\t$1",
+      "}",
+      "",
+      "variables",
+      "{",
+      "\tmsTimer ${2:tCycle};",
+      "}",
+      "",
+      "on start",
+      "{",
+      "\tsetTimerCyclic(${2:tCycle}, ${3:100});",
+      "}",
+      "",
+      "on timer ${2:tCycle}",
+      "{",
+      "\t$0",
+      "}"
+    ]
+  },
+  "Test module skeleton": {
+    "prefix": "capl-testmodule",
+    "description": "MainTest with a test case",
+    "body": [
+      "void MainTest()",
+      "{",
+      "\ttestModuleTitle(\"${1:Module title}\");",
+      "\ttestModuleDescription(\"${2:Description}\");",
+      "\t${3:TC_First}();",
+      "}",
+      "",
+      "testcase ${3:TC_First}()",
+      "{",
+      "\ttestCaseTitle(\"${4:TC-001}\", \"${5:Title}\");",
+      "\t$0",
+      "}"
+    ]
+  },
+  "variables section": { "prefix": "variables", "body": ["variables", "{", "\t$0", "}"] },
+  "includes section": { "prefix": "includes", "body": ["includes", "{", "\t#include \"${1:file.cin}\"", "}"] },
+  "on start": { "prefix": "onstart", "body": ["on start", "{", "\t$0", "}"] },
+  "on preStart": { "prefix": "onprestart", "body": ["on preStart", "{", "\t$0", "}"] },
+  "on stopMeasurement": { "prefix": "onstop", "body": ["on stopMeasurement", "{", "\t$0", "}"] },
+  "on message": { "prefix": "onmessage", "body": ["on message ${1:*}", "{", "\t$0", "}"] },
+  "on timer": { "prefix": "ontimer", "body": ["on timer ${1:tCycle}", "{", "\t$0", "}"] },
+  "on key": { "prefix": "onkey", "body": ["on key '${1:a}'", "{", "\t$0", "}"] },
+  "on signal_update": { "prefix": "onsignal", "body": ["on signal_update ${1:Signal}", "{", "\t$0", "}"] },
+  "on sysvar_update": { "prefix": "onsysvar", "body": ["on sysvar_update ${1:Namespace}::${2:Variable}", "{", "\t$0 // @this holds the value", "}"] },
+  "on diagRequest (ECU simulation)": {
+    "prefix": "ondiagrequest",
+    "body": ["on diagRequest ${1:Ecu}.${2:Service}", "{", "\tdiagResponse this resp;", "\t$0", "\tdiagSendResponse(resp);", "}"]
+  },
+  "on diagResponse": { "prefix": "ondiagresponse", "body": ["on diagResponse ${1:Ecu}.${2:Service}", "{", "\t$0", "}"] },
+  "on linFrame": { "prefix": "onlinframe", "body": ["on linFrame ${1:*}", "{", "\t$0", "}"] },
+  "on ethernetPacket": { "prefix": "onethernet", "body": ["on ethernetPacket ${1:*}", "{", "\t$0", "}"] },
+  "on pdu": { "prefix": "onpdu", "body": ["on pdu ${1:PduName}", "{", "\t$0", "}"] },
+  "testcase": { "prefix": "testcase", "body": ["testcase ${1:TC_Name}()", "{", "\ttestCaseTitle(\"${2:id}\", \"${3:title}\");", "\t$0", "}"] },
+  "testfunction": { "prefix": "testfunction", "body": ["testfunction ${1:TF_Name}(${2})", "{", "\t$0", "}"] },
+  "function": { "prefix": "func", "body": ["${1:void} ${2:Name}(${3})", "{", "\t$0", "}"] },
+  "struct": { "prefix": "struct", "body": ["struct ${1:Name}", "{", "\t${2:int} ${3:member};", "};"] },
+  "enum": { "prefix": "enum", "body": ["enum ${1:Name} { ${2:Value1}, ${3:Value2} };"] },
+  "message declaration": { "prefix": "msg", "body": ["message ${1:0x100} ${2:msg};"] },
+  "send message": {
+    "prefix": "sendmsg",
+    "body": ["message ${1:0x100} ${2:msg};", "${2:msg}.dlc = ${3:8};", "${2:msg}.byte(0) = ${4:0x00};", "output(${2:msg});"]
+  },
+  "for loop": { "prefix": "for", "body": ["for (${1:i} = 0; ${1:i} < ${2:elcount(${3:array})}; ${1:i}++)", "{", "\t$0", "}"] },
+  "for each (associative array)": { "prefix": "foreach", "body": ["for (${1:long} ${2:key} : ${3:map})", "{", "\t$0", "}"] },
+  "if": { "prefix": "if", "body": ["if (${1:condition})", "{", "\t$0", "}"] },
+  "switch": { "prefix": "switch", "body": ["switch (${1:value})", "{", "\tcase ${2:0}:", "\t\t$0", "\t\tbreak;", "\tdefault:", "\t\tbreak;", "}"] },
+  "write": { "prefix": "write", "body": ["write(\"${1:%d}\", ${2:value});"] },
+  "writeLineEx": { "prefix": "writelineex", "body": ["writeLineEx(${1|1,0,4,-3|}, ${2|1,0,2,3|}, \"${3:text}\");"] },
+  "diagnostic request (tester)": {
+    "prefix": "diagreq",
+    "body": [
+      "diagRequest ${1:Ecu}.${2:Service} req;",
+      "diagSendRequest(req);",
+      "if (TestWaitForDiagResponse(req, ${3:2000}) == 1)",
+      "{",
+      "\tif (diagGetLastResponseCode(req) == -1) testStepPass(\"${4:1}\", \"Positive response\");",
+      "\telse testStepFail(\"${4:1}\", \"NRC 0x%02X\", diagGetLastResponseCode(req));",
+      "}",
+      "else",
+      "\ttestStepFail(\"${4:1}\", \"No response\");"
+    ]
+  },
+  "wait for message": {
+    "prefix": "waitmsg",
+    "body": [
+      "if (testWaitForMessage(${1:0x100}, ${2:1000}) == 1)",
+      "\ttestStepPass(\"${3:1}\", \"Message received\");",
+      "else",
+      "\ttestStepFail(\"${3:1}\", \"Message not received within ${2:1000} ms\");"
+    ]
+  }
+}

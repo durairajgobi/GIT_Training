@@ -22,6 +22,7 @@ Design document: [docs/DESIGN.md](docs/DESIGN.md)
 | `docker/` | Container images and compose stack |
 | `systemd/`, `config/` | Service units and default configuration |
 | `tests/` | C unit tests, Python unit tests, HIL framework (`tcu_testkit`) and suites |
+| `vscode-capl/` | VS Code extension for Vector CAPL scripting (see its [README](vscode-capl/README.md)) |
 
 ## Host build and tests
 

@@ -1,0 +1,83 @@
+/*@!Encoding:65001*/
+includes
+{
+  #include "utils.cin"
+}
+
+variables
+{
+  message 0x100 msgEngine;
+  message CAN1.EngineData msgData;
+  msTimer tCycle;
+  int gCounter = 0, gErrors;
+  char gBuffer[256];
+  struct Point
+  {
+    int x;
+    int y;
+  };
+  enum State { Idle, Running, Fault };
+  int gLookup[char[]];             // associative array
+}
+
+on preStart
+{
+  write("Node %s prestart", "Engine");
+}
+
+on start
+{
+  setTimerCyclic(tCycle, 100);
+  @sysvar::Engine::Enabled = 1;
+}
+
+on timer tCycle
+{
+  msgEngine.dlc = 8;
+  msgEngine.byte(0) = gCounter++ & 0xFF;
+  $EngineData::EngineSpeed = 1500.0;
+  output(msgEngine);
+}
+
+on message EngineData
+{
+  float rpm;
+  rpm = this.EngineSpeed.phys;
+  if (rpm > 6000)
+  {
+    writeLineEx(1, 2, "Overspeed: %f", rpm);
+  }
+}
+
+on sysvar_update Engine::Enabled
+{
+  if (@this == 0) cancelTimer(tCycle);
+}
+
+on key 'r'
+{
+  gErrors = 0;
+  ResetCounters(0, 0);
+}
+
+on diagResponse Engine.SerialNumber_Read
+{
+  write("Response received, NRC=%d", diagGetLastResponseCode(this));
+}
+
+// Resets the counters to the given values.
+void ResetCounters(int counter, int errors)
+{
+  gCounter = counter;
+  gErrors = errors;
+  snprintf(gBuffer, elcount(gBuffer), "reset at %d", timeNow());
+}
+
+testcase TC_EngineSpeed()
+{
+  testCaseTitle("TC-001", "Engine speed is reported");
+  if (testWaitForMessage(0x100, 500) == 1)
+    testStepPass("1", "Message received");
+  else
+    testStepFail("1", "Message timeout");
+}

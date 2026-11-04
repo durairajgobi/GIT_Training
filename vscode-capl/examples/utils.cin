@@ -1,0 +1,16 @@
+/*@!Encoding:65001*/
+variables
+{
+  const dword kMaxRetries = 3;
+}
+
+/**
+ * Sends a diagnostic request and waits for the response.
+ * @param req the request object
+ * @param timeoutMs timeout in milliseconds
+ */
+long Util_SendAndWait(diagRequest * req, dword timeoutMs)
+{
+  diagSendRequest(req);
+  return TestWaitForDiagResponse(req, timeoutMs);
+}

@@ -1,0 +1,479 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "CAPL",
+  "scopeName": "source.capl",
+  "fileTypes": [
+    "can",
+    "cin"
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#preprocessor"
+    },
+    {
+      "include": "#sections"
+    },
+    {
+      "include": "#event-handler"
+    },
+    {
+      "include": "#test-definition"
+    },
+    {
+      "include": "#statements"
+    }
+  ],
+  "repository": {
+    "statements": {
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#preprocessor"
+        },
+        {
+          "include": "#strings"
+        },
+        {
+          "include": "#chars"
+        },
+        {
+          "include": "#numbers"
+        },
+        {
+          "include": "#signal-access"
+        },
+        {
+          "include": "#sysvar-access"
+        },
+        {
+          "include": "#db-qualified"
+        },
+        {
+          "include": "#function-definition"
+        },
+        {
+          "include": "#storage"
+        },
+        {
+          "include": "#types"
+        },
+        {
+          "include": "#keywords"
+        },
+        {
+          "include": "#constants"
+        },
+        {
+          "include": "#this"
+        },
+        {
+          "include": "#selectors"
+        },
+        {
+          "include": "#function-call"
+        },
+        {
+          "include": "#operators"
+        },
+        {
+          "include": "#block"
+        },
+        {
+          "include": "#parens"
+        },
+        {
+          "include": "#brackets"
+        },
+        {
+          "include": "#punctuation"
+        }
+      ]
+    },
+    "block": {
+      "begin": "\\{",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.block.begin.capl"
+        }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.block.end.capl"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#statements"
+        }
+      ]
+    },
+    "parens": {
+      "begin": "\\(",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.parens.begin.capl"
+        }
+      },
+      "end": "\\)",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.parens.end.capl"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#statements"
+        }
+      ]
+    },
+    "brackets": {
+      "begin": "\\[",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.brackets.begin.capl"
+        }
+      },
+      "end": "\\]",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.brackets.end.capl"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#statements"
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.documentation.capl",
+          "begin": "/\\*\\*(?!/)",
+          "end": "\\*/",
+          "patterns": [
+            {
+              "match": "(?<=\\s|\\*)@(param|return|returns|brief|note|see|deprecated|author|since)\\b",
+              "name": "storage.type.class.doc.capl"
+            }
+          ]
+        },
+        {
+          "name": "comment.block.capl",
+          "begin": "/\\*",
+          "end": "\\*/"
+        },
+        {
+          "name": "comment.line.double-slash.capl",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "preprocessor": {
+      "patterns": [
+        {
+          "match": "^\\s*(#\\s*include)\\s+(\"[^\"]*\"|<[^>]*>)",
+          "captures": {
+            "1": {
+              "name": "keyword.control.directive.include.capl"
+            },
+            "2": {
+              "name": "string.quoted.other.include.capl"
+            }
+          }
+        },
+        {
+          "match": "^\\s*(#\\s*(?:pragma|if|ifdef|ifndef|elif|else|endif|define|undef|error|warning))\\b(.*)$",
+          "captures": {
+            "1": {
+              "name": "keyword.control.directive.capl"
+            },
+            "2": {
+              "name": "meta.preprocessor.capl"
+            }
+          }
+        }
+      ]
+    },
+    "sections": {
+      "match": "^\\s*(variables|includes)\\b(?=\\s*(\\{|$|//))",
+      "captures": {
+        "1": {
+          "name": "keyword.other.section.capl"
+        }
+      }
+    },
+    "event-handler": {
+      "comment": "on <event> [selector] — event procedures, incl. CANoe 12+ sysvar_update/signal_update/diag/Ethernet/AUTOSAR PDU events.",
+      "begin": "^\\s*(on)\\s+(preStart|start|preStop|stopMeasurement|key|timer|message|multiplexed_message|signal|signal_update|signal_change|sysvar|sysvar_update|sysvar_change|envVar|errorFrame|errorActive|errorPassive|warningLimit|busOff|diagRequest|diagResponse|diagRequestSent|diagResponseSent|diagFrameReceived|frFrame|frPDU|frNullFrame|frStartCycle|frError|frSymbol|frStatus|frSlot|linFrame|linHeader|linWakeupFrame|linSleepModeEvent|linCsError|linReceiveError|linSyncError|linTransmError|linSlaveTimeout|linSchedulerModeChange|linSpikeEvent|linLongDominantSignal|linBaudrateEvent|linDlcInfo|linWakeupFrame|ethernetPacket|ethernetStatus|ethernetErrorPacket|pdu|pg|gmLanMessage|mostMessage|mostAmsMessage|mostLightLockError|a429word|a429error|serviceSignal|fct_called|fct_returned|method|ostPacket|j1587Param|j1587Message|kLineFrame|busLoad|canFdMessage|ccConnection|someipMessage|someipField|someipMethod|someipEvent|someipServiceDiscovery|measurementStart|stop)\\b",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.on.capl"
+        },
+        "2": {
+          "name": "keyword.other.event.capl"
+        }
+      },
+      "end": "(?=\\{)|$",
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#chars"
+        },
+        {
+          "include": "#numbers"
+        },
+        {
+          "match": "\\*",
+          "name": "keyword.operator.wildcard.capl"
+        },
+        {
+          "match": "\\b(ctrl|shift|alt)?(F1[0-2]|F[1-9]|PageUp|PageDown|Home|End|Up|Down|Left|Right|Insert|Delete|Enter|Space|Esc|Tab)\\b",
+          "name": "constant.language.key.capl"
+        },
+        {
+          "include": "#db-qualified"
+        },
+        {
+          "match": "\\b[A-Za-z_]\\w*\\b",
+          "name": "entity.name.function.event.capl"
+        }
+      ]
+    },
+    "test-definition": {
+      "match": "^\\s*(export\\s+)?(testcase|testfunction|testgroup)\\s+([A-Za-z_]\\w*)\\s*(?=\\()",
+      "captures": {
+        "1": {
+          "name": "storage.modifier.export.capl"
+        },
+        "2": {
+          "name": "keyword.other.test.capl"
+        },
+        "3": {
+          "name": "entity.name.function.test.capl"
+        }
+      }
+    },
+    "function-definition": {
+      "match": "^\\s*(?:(export|static|inline)\\s+)?(?!(?:return|else|case|goto|new|delete|if|while|for|switch|do)\\b)([A-Za-z_]\\w*(?:\\s*\\*)?(?:\\s*\\[\\s*\\])?)\\s+(?!(?:if|while|for|switch|sizeof)\\b)([A-Za-z_]\\w*)\\s*(?=\\()",
+      "captures": {
+        "1": {
+          "name": "storage.modifier.capl"
+        },
+        "2": {
+          "patterns": [
+            {
+              "include": "#types"
+            },
+            {
+              "match": "[A-Za-z_]\\w*",
+              "name": "entity.name.type.capl"
+            }
+          ]
+        },
+        "3": {
+          "name": "entity.name.function.capl"
+        }
+      }
+    },
+    "function-call": {
+      "match": "\\b([A-Za-z_]\\w*)\\s*(?=\\()",
+      "captures": {
+        "1": {
+          "name": "entity.name.function.call.capl"
+        }
+      }
+    },
+    "storage": {
+      "patterns": [
+        {
+          "match": "\\b(const|static|export|extern|_align|struct|enum|union|typedef|inline)\\b",
+          "name": "storage.modifier.capl"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "match": "\\b(void|char|byte|word|dword|qword|int|long|int64|float|double|bool|signed|unsigned)\\b",
+          "name": "storage.type.primitive.capl"
+        },
+        {
+          "match": "\\b(message|multiplexed_message|msTimer|timer|signal|sysvar|sysvarInt|sysvarFloat|sysvarString|sysvarData|sysvarIntArray|sysvarFloatArray|sysvarLongLong|envVar|diagRequest|diagResponse|diagRequestSent|diagResponseSent|frFrame|frPDU|frError|frStartCycle|linFrame|linHeader|ethernetPacket|pdu|pg|gmLanMessage|mostMessage|mostAmsMessage|a429word|serviceSignal|serviceSignalNumber|serviceSignalString|dbNode|dbMsg|dbSig|dbEnvVar|dbNodePtr|dbMsgPtr|dbSigPtr|canMessage|canFdMessage|j1587Param|j1587Message|kLineFrame|someipMessage|ethernetStatus|IP_Endpoint|IP_Address|domain|testcaseHandle)\\b",
+          "name": "storage.type.capl"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "match": "\\b(if|else|switch|case|default|for|while|do|break|continue|return|goto)\\b",
+          "name": "keyword.control.capl"
+        },
+        {
+          "match": "\\b(sizeof|elcount|new|delete)\\b",
+          "name": "keyword.operator.word.capl"
+        },
+        {
+          "match": "\\b(testcase|testfunction|testgroup|on)\\b",
+          "name": "keyword.other.capl"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "match": "\\b(true|false|TRUE|FALSE|NULL|Rx|Tx|TxRequest|RxRequest|rx|tx)\\b",
+          "name": "constant.language.capl"
+        },
+        {
+          "match": "\\b(kCanFdFrame|kCanFdBrs|kCanFdEsi|kCanRemoteFrame)\\b",
+          "name": "constant.language.capl"
+        }
+      ]
+    },
+    "this": {
+      "match": "\\bthis\\b",
+      "name": "variable.language.this.capl"
+    },
+    "selectors": {
+      "comment": "Message/frame selectors such as this.dlc, msg.byte(0), msg.id, msg.phys",
+      "match": "(\\.)\\s*(id|dlc|dataLength|can|dir|time|time_ns|type|rtr|simulated|name|msgChannel|fdf|brs|esi|byte|word|dword|qword|char|int|long|int64|phys|raw|raw64|txReq|startBit|bitLength|SA|DA|PGN|Priority|DP|EDP|PF|PS|FR_ChannelMask|FR_Cycle|FR_SlotID|FR_PayloadLength|FR_Flags|frameId|Length|Source|Destination|EtherType|Payload|isDefault|init|bitcount)\\b",
+      "captures": {
+        "1": {
+          "name": "punctuation.accessor.capl"
+        },
+        "2": {
+          "name": "variable.other.member.selector.capl"
+        }
+      }
+    },
+    "signal-access": {
+      "comment": "$Signal, $Message::Signal, $Ns::Var, $CAN1::Node::Msg::Sig",
+      "match": "(\\$)((?:[A-Za-z_]\\w*::)*[A-Za-z_]\\w*)",
+      "captures": {
+        "1": {
+          "name": "keyword.operator.signal.capl"
+        },
+        "2": {
+          "name": "variable.other.signal.capl"
+        }
+      }
+    },
+    "sysvar-access": {
+      "comment": "@sysvar::Ns::Var and legacy @Ns::Var",
+      "match": "(@)((?:[A-Za-z_]\\w*::)*[A-Za-z_]\\w*)",
+      "captures": {
+        "1": {
+          "name": "keyword.operator.sysvar.capl"
+        },
+        "2": {
+          "name": "variable.other.sysvar.capl"
+        }
+      }
+    },
+    "db-qualified": {
+      "match": "\\b((?:[A-Za-z_]\\w*)(?:::[A-Za-z_]\\w*)+)\\b",
+      "name": "entity.name.namespace.capl"
+    },
+    "strings": {
+      "name": "string.quoted.double.capl",
+      "begin": "\"",
+      "end": "\"|(?<!\\\\)$",
+      "patterns": [
+        {
+          "match": "\\\\([\\\\'\"abfnrtv0]|x[0-9A-Fa-f]{1,2}|[0-7]{1,3})",
+          "name": "constant.character.escape.capl"
+        },
+        {
+          "match": "%[-+ #0]*(\\d+|\\*)?(\\.(\\d+|\\*))?(hh|h|ll|l|I64)?[diouxXeEfgGcsp%]",
+          "name": "constant.other.placeholder.capl"
+        }
+      ]
+    },
+    "chars": {
+      "name": "string.quoted.single.capl",
+      "match": "'(\\\\.|[^'\\\\])'"
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "match": "\\b0[xX][0-9A-Fa-f]+[xX]?\\b",
+          "name": "constant.numeric.hex.capl"
+        },
+        {
+          "match": "\\b0[bB][01]+\\b",
+          "name": "constant.numeric.binary.capl"
+        },
+        {
+          "match": "\\b(\\d+\\.\\d*|\\.\\d+|\\d+)([eE][+-]?\\d+)?(LL|ll|[uUlLfF])?\\b",
+          "name": "constant.numeric.decimal.capl"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "match": "::",
+          "name": "punctuation.separator.namespace.capl"
+        },
+        {
+          "match": "(\\+\\+|--)",
+          "name": "keyword.operator.increment-decrement.capl"
+        },
+        {
+          "match": "(<<=|>>=|\\+=|-=|\\*=|/=|%=|&=|\\|=|\\^=)",
+          "name": "keyword.operator.assignment.compound.capl"
+        },
+        {
+          "match": "(==|!=|<=|>=|<|>)",
+          "name": "keyword.operator.comparison.capl"
+        },
+        {
+          "match": "(&&|\\|\\||!)",
+          "name": "keyword.operator.logical.capl"
+        },
+        {
+          "match": "(<<|>>|&|\\||\\^|~)",
+          "name": "keyword.operator.bitwise.capl"
+        },
+        {
+          "match": "=",
+          "name": "keyword.operator.assignment.capl"
+        },
+        {
+          "match": "(\\+|-|\\*|/|%)",
+          "name": "keyword.operator.arithmetic.capl"
+        },
+        {
+          "match": "\\?|:",
+          "name": "keyword.operator.ternary.capl"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "match": ";",
+          "name": "punctuation.terminator.statement.capl"
+        },
+        {
+          "match": ",",
+          "name": "punctuation.separator.delimiter.capl"
+        },
+        {
+          "match": "\\.",
+          "name": "punctuation.accessor.capl"
+        }
+      ]
+    }
+  }
+}

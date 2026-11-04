@@ -1,0 +1,36 @@
+name: CAPL VS Code extension CI
+
+on:
+  push:
+    paths:
+      - "vscode-capl/**"
+      - ".github/workflows/vscode-capl-ci.yml"
+  pull_request:
+    paths:
+      - "vscode-capl/**"
+      - ".github/workflows/vscode-capl-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-package:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vscode-capl
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: vscode-capl/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: capl-scripting-vsix
+          path: vscode-capl/*.vsix
