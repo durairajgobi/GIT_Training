@@ -51,7 +51,14 @@ struct lte_cfg {
 	uint32_t at_timeout_ms;     /* per command, e.g. 5 s */
 	uint32_t search_timeout_ms; /* e.g. 180 s before radio cycle */
 	uint32_t max_radio_cycles;  /* then full modem re-init */
+
+	/* Multi-RAT (see rat.h). All off = LTE-only behaviour. */
+	bool urc_ps;                /* AT+CGREG=2: 2G/3G packet domain */
+	bool urc_5gs;               /* AT+C5GREG=2: 5G standalone */
+	char rat_cmd[96];           /* RAT preference, sent with radio off */
 };
+
+#define LTE_MAX_INIT_CMDS 8
 
 struct lte_sm {
 	lte_state_t state;
@@ -59,6 +66,9 @@ struct lte_sm {
 	const struct lte_ops *ops;
 	void *ctx;
 	backoff_t backoff;
+	const char *init_cmds[LTE_MAX_INIT_CMDS];
+	bool init_optional[LTE_MAX_INIT_CMDS]; /* ERROR is not fatal */
+	unsigned int n_init;
 	unsigned int init_step;
 	unsigned int pdn_step;
 	unsigned int radio_cycles;
@@ -70,5 +80,8 @@ void lte_sm_init(struct lte_sm *sm, const struct lte_cfg *cfg,
 		 const struct lte_ops *ops, void *ctx);
 lte_state_t lte_sm_handle(struct lte_sm *sm, lte_event_t ev);
 const char *lte_state_name(lte_state_t s);
+
+/* Change the RAT preference used on the next (re-)init. "" clears it. */
+void lte_sm_set_rat_cmd(struct lte_sm *sm, const char *cmd);
 
 #endif

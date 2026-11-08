@@ -54,5 +54,45 @@ int main(void)
 	CHECK_EQ(at_parse_cpin_ready("+CPIN: SIM PIN"), 0);
 	CHECK_EQ(at_parse_cpin_ready("OK"), -1);
 	CHECK(!at_has_prefix("+CEREGX: 1", "+CEREG"));
+	/* Multi-RAT registration with <AcT>. */
+	{
+		struct at_cesq q;
+		int act, mode;
+
+		CHECK_EQ(at_parse_reg_act("+CEREG: 1,\"1A2B\",\"01A2B3C4\",13", false, &stat, &act), 0);
+		CHECK_EQ(stat, AT_REG_HOME);
+		CHECK_EQ(act, 13);
+		CHECK_EQ(at_parse_reg_act("+CGREG: 5,\"00C3\",\"0000A13F\",6,\"01\"", false, &stat, &act), 0);
+		CHECK_EQ(stat, AT_REG_ROAMING);
+		CHECK_EQ(act, 6);
+		CHECK_EQ(at_parse_reg_act("+C5GREG: 2,1,\"00A1B2\",\"000000123456\",11,0", true, &stat, &act), 0);
+		CHECK_EQ(stat, AT_REG_HOME);
+		CHECK_EQ(act, 11);
+		/* Bare stat, and empty location fields. */
+		CHECK_EQ(at_parse_reg_act("+CEREG: 2", false, &stat, &act), 0);
+		CHECK_EQ(stat, AT_REG_SEARCHING);
+		CHECK_EQ(act, -1);
+		CHECK_EQ(at_parse_reg_act("+CEREG: 1,,,7", false, &stat, &act), 0);
+		CHECK_EQ(act, 7);
+		CHECK_EQ(at_parse_reg("+C5GREG: 3", false, &stat), 0);
+		CHECK_EQ(stat, AT_REG_DENIED);
+		CHECK_EQ(at_parse_reg_act("+CSQ: 1,2", false, &stat, &act), -1);
+
+		CHECK_EQ(at_parse_cops("+COPS: 0,0,\"Op, Inc\",13", &mode, &act), 0);
+		CHECK_EQ(mode, 0);
+		CHECK_EQ(act, 13);
+		CHECK_EQ(at_parse_cops("+COPS: 0", &mode, &act), 0);
+		CHECK_EQ(act, -1);
+		CHECK_EQ(at_parse_cops("+COPS: 0,2,\"26201\",2", &mode, &act), 0);
+		CHECK_EQ(act, 2);
+
+		CHECK_EQ(at_parse_cesq("+CESQ: 99,99,255,255,20,40", &q), 0);
+		CHECK_EQ(q.rsrp, 40);
+		CHECK_EQ(q.ss_rsrp, 255);
+		CHECK_EQ(at_parse_cesq("+CESQ: 99,99,255,255,20,40,60,70,80", &q), 0);
+		CHECK_EQ(q.ss_rsrp, 70);
+		CHECK_EQ(q.ss_sinr, 80);
+		CHECK_EQ(at_parse_cesq("+CESQ: 99,99", &q), -1);
+	}
 	CHECK_DONE();
 }

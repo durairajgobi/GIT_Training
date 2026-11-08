@@ -16,10 +16,43 @@ static const char *const names[LTE_STATE_COUNT] = {
 	[LTE_BACKOFF] = "BACKOFF",
 };
 
-/* Echo off, verbose errors, registration URCs with cell info, radio off. */
-static const char *const init_cmds[] = {
-	"ATE0", "AT+CMEE=1", "AT+CEREG=2", "AT+CFUN=4",
-};
+/*
+ * Echo off, verbose errors, registration URCs with cell info and <AcT> for
+ * every enabled domain, radio off, then the RAT preference (if any) so it
+ * takes effect when the radio comes back on.
+ */
+static void add_init(struct lte_sm *sm, const char *cmd, bool optional)
+{
+	sm->init_cmds[sm->n_init] = cmd;
+	sm->init_optional[sm->n_init] = optional;
+	sm->n_init++;
+}
+
+/*
+ * The multi-RAT commands are optional: an LTE-only modem rejects
+ * AT+C5GREG, a 5G-only one may reject AT+CGREG, and not every firmware
+ * implements the preference command. None of that should stop bring-up.
+ */
+static void build_init(struct lte_sm *sm)
+{
+	sm->n_init = 0;
+	add_init(sm, "ATE0", false);
+	add_init(sm, "AT+CMEE=1", false);
+	if (sm->cfg.urc_ps)
+		add_init(sm, "AT+CGREG=2", true);
+	add_init(sm, "AT+CEREG=2", false);
+	if (sm->cfg.urc_5gs)
+		add_init(sm, "AT+C5GREG=2", true);
+	add_init(sm, "AT+CFUN=4", false);
+	if (sm->cfg.rat_cmd[0])
+		add_init(sm, sm->cfg.rat_cmd, true);
+}
+
+void lte_sm_set_rat_cmd(struct lte_sm *sm, const char *cmd)
+{
+	snprintf(sm->cfg.rat_cmd, sizeof(sm->cfg.rat_cmd), "%s", cmd ? cmd : "");
+	build_init(sm);
+}
 
 const char *lte_state_name(lte_state_t s)
 {
@@ -45,7 +78,7 @@ static void start_init(struct lte_sm *sm)
 	sm->init_step = 0;
 	sm->radio_cycles = 0;
 	enter(sm, LTE_MODEM_INIT, "init");
-	send(sm, init_cmds[0], sm->cfg.at_timeout_ms);
+	send(sm, sm->init_cmds[0], sm->cfg.at_timeout_ms);
 }
 
 static void start_search(struct lte_sm *sm, const char *why)
@@ -96,6 +129,8 @@ void lte_sm_init(struct lte_sm *sm, const struct lte_cfg *cfg,
 	sm->ctx = ctx;
 	if (!sm->cfg.max_radio_cycles)
 		sm->cfg.max_radio_cycles = 3;
+	sm->cfg.rat_cmd[sizeof(sm->cfg.rat_cmd) - 1] = '\0';
+	build_init(sm);
 	backoff_init(&sm->backoff, 2000, 300000, 20, 0);
 }
 
@@ -119,9 +154,14 @@ lte_state_t lte_sm_handle(struct lte_sm *sm, lte_event_t ev)
 		break;
 
 	case LTE_MODEM_INIT:
+		if (ev == LTE_EV_AT_ERROR && sm->init_step < sm->n_init &&
+		    sm->init_optional[sm->init_step]) {
+			LOG_W("optional init command %s rejected", sm->init_cmds[sm->init_step]);
+			ev = LTE_EV_AT_OK;
+		}
 		if (ev == LTE_EV_AT_OK) {
-			if (++sm->init_step < ARRAY_SIZE(init_cmds)) {
-				send(sm, init_cmds[sm->init_step], sm->cfg.at_timeout_ms);
+			if (++sm->init_step < sm->n_init) {
+				send(sm, sm->init_cmds[sm->init_step], sm->cfg.at_timeout_ms);
 			} else {
 				enter(sm, LTE_SIM_WAIT, "init done");
 				send(sm, "AT+CPIN?", sm->cfg.at_timeout_ms);
