@@ -19,6 +19,8 @@ add_library(tcu_core STATIC
   src/ecall/ecall_sm.c
   src/lte/at.c
   src/lte/lte_sm.c
+  src/lte/at_chan.c
+  src/lte/rat.c
   src/bt/bt_reconnect.c
   src/bt/hfp_codec.c
   src/pm/pm_policy.c)
@@ -71,7 +73,7 @@ install(DIRECTORY config/ DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/tcu USE_S
 
 if(TCU_BUILD_TESTS)
   enable_testing()
-  foreach(t backoff msd ecall_sm at lte_sm bt_reconnect hfp_codec pm_policy afalg)
+  foreach(t backoff msd ecall_sm at lte_sm at_chan rat bt_reconnect hfp_codec pm_policy afalg)
     add_executable(test_${t} tests/c/test_${t}.c)
     target_include_directories(test_${t} PRIVATE tests/c)
     target_compile_definitions(test_${t} PRIVATE TCU_LOG_STDERR)

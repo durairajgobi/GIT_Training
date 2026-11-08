@@ -197,9 +197,9 @@ table in `ecalld.c` (`modem.*`). The URC strings in that table are
 stateDiagram-v2
   [*] --> OFF
   OFF --> MODEM_INIT: start
-  MODEM_INIT --> SIM_WAIT: ATE0, CMEE, CEREG=2, CFUN=4 ok
+  MODEM_INIT --> SIM_WAIT: ATE0, CMEE, [CGREG=2], CEREG=2, [C5GREG=2], CFUN=4, [RAT pref] ok
   SIM_WAIT --> SEARCHING: +CPIN READY (CFUN=1)
-  SEARCHING --> PDN_CONNECTING: CEREG home / roaming (if allowed)
+  SEARCHING --> PDN_CONNECTING: registered on any allowed RAT (home / roaming if allowed)
   PDN_CONNECTING --> CONNECTED: CGDCONT, CGACT ok (netif up)
   CONNECTED --> SEARCHING: registration lost (netif down)
   SEARCHING --> BACKOFF: timeout (radio cycle; re-init after N)
@@ -217,144 +217,46 @@ stateDiagram-v2
 - **netif hook** (`config/ltecm-netif-hook`) runs DHCP on `wwan0`, writes `/run/tcu/resolv.wwan` for dnsmasq, and reloads the hotspot policy.
 - **SCTP** is built as a module (`CONFIG_IP_SCTP=m`, `lksctp-tools`) for backend links that need multi-streaming and multi-homing.
 
-## 7. Bluetooth (BlueZ 5.x)
+### 6.1 Multi-RAT: 3G, 4G LTE and 5G (`src/lte/rat.c`)
 
-### 7.1 Reconnection (`src/bt/bt_reconnect.c`, `btmgr`)
+The modem selects the cell and does the inter-RAT reselection and handover.
+`ltecm` makes sure the bearer follows it, and steers the modem away from
+RATs that are present but unusable.
 
-BlueZ's built-in `[Policy] ReconnectAttempts` handles short link drops
-(3 attempts over 7 s). `btmgr` owns everything that needs vehicle context.
-It replaces the earlier fixed-interval retry loop, and each field issue
-below has a unit test in `tests/c/test_bt_reconnect.c`:
+| RAT | Registration URC | `<AcT>` | Signal (`+CESQ`) | Default weak threshold |
+|---|---|---|---|---|
+| 2G GSM/EGPRS (opt-in) | `+CGREG` | 0, 1, 3, 8 | RXLEV | -100 dBm |
+| 3G UMTS/HSPA | `+CGREG` | 2, 4–6 | RSCP | -106 dBm |
+| 4G LTE | `+CEREG` | 7, 9, 10 | RSRP | -115 dBm |
+| 5G NSA (EN-DC) | `+CEREG` / `+COPS` | 13 | SS-RSRP | -110 dBm |
+| 5G SA | `+C5GREG` | 11, 12 | SS-RSRP | -112 dBm |
 
-| # | Field issue | Fix |
-|---|---|---|
-| 1 | Phone and TCU page each other at the same time; the late `InProgress` error tore the new link down | First `Connected=true` wins; our page is abandoned without `Disconnect()` |
-| 2 | Phone deleted the pairing; stale-key retries popped a pairing dialog on the phone every few seconds | Auth failure → `NEEDS_REPAIR`; retries stop until the HMI re-pairs |
-| 3 | Driver disconnected on the phone; the TCU kept reconnecting | Remote-user disconnect (BlueZ ≥ 5.69 `Disconnected` reason) → `SUSPENDED` until next ignition |
-| 4 | `bluetoothd` restart lost state | `WAIT_ADAPTER`, then resume on `Powered=true` |
-| 5 | Unbounded retries drained the battery in standby | Retry budget per ignition cycle; nothing pages with ignition off |
-| 6 | Paging during an eCall disturbed the call | eCall suspends paging; an existing link is kept |
+- **Allowed RATs** come from `TCU_RATS` (`ltecm -R 3g,4g,5g`, the default).
+  At init `ltecm` enables `AT+CGREG=2` / `AT+C5GREG=2` only for the allowed
+  RATs. Both commands and the preference command are optional, so an
+  LTE-only modem configured for 5G still comes up.
+- **Combined registration.** `lte_sm` gets one registration event made from
+  all domains: home on any allowed RAT beats roaming, which beats denied
+  (only when no domain is still searching), which beats searching. While
+  `CONNECTED`, a combined loss is passed on only if it is still true at the
+  next poll tick (10 s). This covers the modem reporting "LTE lost" before
+  "3G registered" during a handover. A RAT that is not allowed does not count
+  as registered.
+- **Status polling.** Every poll tick `ltecm` sends `AT+COPS?` (serving
+  `<AcT>`, which tells 5G NSA apart) and `AT+CESQ`. A FIFO (`at_chan`) sends
+  each `OK`/`ERROR` back to whoever sent the command, so these commands never
+  advance `lte_sm`.
+- **Steering.** A RAT is left out of the preference when:
+  1. its signal stays below the threshold for 30 s, or
+  2. the PDN fails to come up on it (`PDN_CONNECTING -> BACKOFF`).
 
-### 7.2 HFP 1.7 wideband speech (`src/bt/hfp_codec.c`)
-
-The HF side advertises codec negotiation only when the controller supports
-transparent eSCO. It answers `+BCS` with `AT+BCS` for supported codecs, and
-with `AT+BAC` otherwise, as the specification requires. Synchronous
-connection parameters follow the HFP 1.7 ladders: T2 → T1 for mSBC, and
-S4 → S3 → D1 for CVSD, with S4 used only when both sides advertise it.
-
-**Field fix:** some phone and controller pairs accept mSBC and then fail
-every eSCO setup. After the mSBC ladder is exhausted, the codec is
-blacklisted for that phone, and the next negotiation offers CVSD only. The
-call drops to narrowband instead of having no audio. This module is the
-codec policy used by the hands-free backend.
-
-## 8. Wi-Fi: passenger hotspot
-
-```mermaid
-sequenceDiagram
-  participant P as Passenger phone
-  participant H as hostapd (ap0)
-  participant D as dnsmasq
-  participant N as nftables
-  participant C as captive-portal
-  P->>H: SAE (or WPA2-PSK in transition mode)
-  P->>D: DHCP (option 114 = /api/captive)
-  D->>N: lease-hook → policy reload (per-IP quota rules)
-  P->>N: HTTP probe (generate_204)
-  N->>C: DNAT :80 → portal (MAC not in @authorized)
-  C-->>P: 302 → /terms
-  P->>C: POST /accept (CSRF token)
-  C->>N: nft add element @authorized { MAC }
-  P->>N: traffic → wwan0 (masquerade), metered by quota + limit
-```
-
-- **SoftAP + LTE tethering**: `ap0` is a virtual interface on the same PHY as `wlan0`, so depot OTA over station mode keeps working. Traffic is masqueraded out of `wwan0`.
-- **Per-passenger policy** (`hotspot_policy.py`): a default-drop forward chain, plus a named quota (shared by uplink and downlink) and a named rate limit for each passenger. Driver devices can be exempted. The ruleset is applied atomically with `nft -f`. **Reloads carry over** portal sign-ins and quota usage (read from `nft -j`), so a DHCP renewal can neither reset a passenger's allowance nor log them out. Verified by applying it in a network namespace.
-- **Isolation**: `ap_isolate=1`, no forwarding from `ap0` to `ap0`, and the input chain drops all passenger traffic to the TCU's own services except DHCP, DNS and the portal.
-- **Captive portal**: answers OS detection probes with a 302, implements the RFC 8908 API (advertised through RFC 8910 DHCP option 114), and uses a CSRF-protected accept. It runs in a container that has only `CAP_NET_ADMIN`.
-- **WPA3 migration**: deploy SAE + WPA2-PSK transition mode first (PMF optional, `sae_require_mfp=1`), then switch to WPA3-only (`ieee80211w=2`) through fleet config once the client mix allows it. The HIL suite covers all three modes and legacy WPA2-only clients.
-
-## 9. Power management
-
-| State | Entered when | Platform state | Wakes on |
-|---|---|---|---|
-| ACTIVE | ignition on, or eCall active | full run | – |
-| GRACE | ignition off | full run, uploads/OTA allowed | – |
-| STANDBY | grace elapsed with no wakelocks (hard cap 30 min) | suspend-to-RAM, modem PSM/eDRX | ignition, modem RI, CAN INH, RTC (hourly keep-alive) |
-| DEEP_SLEEP | 72 h in standby, battery low, or critically low at ignition-off | powered off via PMIC | ignition only |
-
-- **Wakelocks**: applications take mainline `CONFIG_PM_WAKELOCKS` locks through `/sys/power/wake_lock`; `tcu-pmd` only counts them. After each resume the system stays up for 15 s so the woken application can take a lock.
-- **Time base**: `CLOCK_BOOTTIME`, so standby time is counted while suspended.
-- **Battery**: an unknown reading (ADC missing) never forces deep sleep. A critically low battery skips standby altogether, so the truck can still start.
-
-## 10. Security architecture
-
-```mermaid
-flowchart LR
-  ROM["Boot ROM<br/>HAB verifies"] --> SPL["SPL + U-Boot<br/>(signed)"]
-  SPL --> OPTEE["OP-TEE OS<br/>(signed)"]
-  SPL --> FIT["FIT: kernel + DTB<br/>signature verified"]
-  FIT --> ROOTFS["read-only rootfs (A/B)"]
-  OPTEE --> TA["tcu_keystore TA"]
-  TA --> SS["secure storage<br/>HUK-derived, RPMB rollback"]
-```
-
-- **Boot**: HAB verifies SPL and U-Boot, and U-Boot verifies a signed FIT image. Production U-Boot cannot be interrupted (`BOOTDELAY=-2`). A boot counter with A/B slots provides OTA rollback.
-- **OP-TEE** (ported to i.MX6 and used on i.MX8): secure storage keyed from the CAAM hardware unique key, with RPMB anti-rollback.
-- **Device identity / PKI**: a P-256 key is generated inside the `tcu_keystore` TA, restricted to signing and never extractable. At end of line the public key is turned into a CSR, the fleet device CA issues the certificate, and `scripts/provision_device_cert.sh` installs the chain.
-- **TLS** (`src/security/tls_client.c`, OpenSSL 3): TLS 1.2 minimum, AEAD ciphers only, hostname verification, mutual auth. The OCSP staple is checked for signature, validity window (±5 min) and certificate status; a revoked certificate always fails, and a missing staple fails when `require_ocsp` is set. Verified against `openssl s_server` with good, revoked and missing staples, and with a hostname mismatch.
-- **Kernel crypto API** (`src/security/afalg.c`): hashing and HMAC through AF_ALG are served by CAAM. `tcu-hash` verifies OTA images without loading the A53 cores.
-- **SSH**: OpenSSH only (no Dropbear). It listens on the service VLAN only, accepts user certificates signed by the fleet CA, and then requires keyboard-interactive login through PAM.
-- **AAA**: PAM chains RADIUS (OTP), with TACACS+ as an alternative for authentication and as per-command authorisation and accounting. LDAP decides `tcu-service` group membership. Fast timeouts mean a dead AAA server cannot stall a field session. `pam_radius` and `pam_tacplus` recipes must come from the company layer (they are not in the public layers).
-- **Service hardening**: systemd sandboxing on every unit (`ProtectSystem`, `NoNewPrivileges`, dedicated users, capability bounding).
-
-## 11. Containers
-
-Docker (meta-virtualization `docker-moby`) runs the captive portal and the
-third-party fleet agent. Every container drops all capabilities except the
-one it needs, has a read-only rootfs, sets `no-new-privileges`, and has
-memory, PID and CPU limits. The fleet agent sits on an `internal` bridge
-with no direct route to `wwan0`. Images ship inside the A/B rootfs and are
-`docker load`ed at boot, never pulled while on the road.
-
-## 12. Test strategy
-
-| Level | What | Where | When |
-|---|---|---|---|
-| Unit (C) | every state machine and codec, with ASan/UBSan | `tests/c` (ctest) | every commit |
-| Unit (Python) | policy rendering, nft syntax, live-state carry-over, portal HTTP handler | `tests/unit` | every commit |
-| HIL, simulated | full HIL suite against `tcu_testkit.sim`, using the real portal and policy code | `tests/hil --testbed sim` | every commit |
-| HIL, bench | head unit, legacy client, 2 programmable APs + attenuators, sniffer, DUT | `tests/hil --testbed lab1.json` | nightly (Jenkins) |
-
-**Framework (`tests/framework/tcu_testkit`)**: device drivers (`TcuDut`,
-`HeadUnit`, `ProgrammableAP`, `Sniffer`) work over SSH with connection
-multiplexing. Roam time is measured from the sniffer capture (Reassociation
-Request to EAPOL 4/4 or FT Reassociation Response), not from client logs.
-The connect matrix is generated from the bench's channel list, so adding a
-channel or AP grows the nightly run automatically. On a failure, the DUT
-journal is attached to the JUnit report.
-
-## 13. Repository map
-
-| Area | Path |
-|---|---|
-| eCall | `src/ecall/` |
-| LTE | `src/lte/` |
-| Bluetooth | `src/bt/` |
-| Power | `src/pm/` |
-| Security tools | `src/security/`, `optee/`, `scripts/provision_device_cert.sh` |
-| Hotspot | `src/hotspot/`, `config/` |
-| Services | `systemd/` |
-| Yocto | `meta-telematics/` |
-| Containers | `docker/` |
-| Tests / CI | `tests/`, `Jenkinsfile` |
-
-## 14. Known gaps and porting checklist
-
-- [ ] Replace the placeholder MSD/URC strings in `ecalld.c` with the modem vendor's commands, and validate the MSD against a conformance-tested ASN.1 codec.
-- [ ] Board DTS and the memory map in `optee-os_%.bbappend` (values shown are board-specific examples).
-- [ ] `pam-radius` and `pam-tacplus` recipes in the company layer; fleet AAA endpoints and secrets go in provisioning.
-- [ ] Audio routing hand-off from `ecalld` to the audio manager (currently logged only).
-- [ ] Pin `SRCREV` in `tcu-apps` and `tcu-keystore-ta` for release builds.
-- [ ] Verify AF_ALG on target. It is skipped in containers that block the socket family; check `/proc/crypto` for `*-caam` drivers.
+  It stays out for 10 min, then the modem may try it again. Each repeat
+  doubles the hold time, up to 80 min. A RAT that serves well for a full hold
+  period starts again at 10 min. The lowest RAT still in use is never left
+  out.
+- **Preference command.** `-V 3gpp` writes `AT+WS46=<n>` (TS 27.007, e.g.
+  38 = UTRAN+E-UTRAN+NG-RAN). `-V quectel` writes
+  `AT+QNWPREFCFG="mode_pref",NR5G:LTE:WCDMA`. The command is sent at once,
+  and again after every modem re-init.
+- **Status file** `/run/ltecm/status` (`state=`, `rat=`, `signal_dbm=`,
+  `pref=`) is for telemetry and the hotspot.

@@ -1,0 +1,30 @@
+[Unit]
+Description=Wi-Fi 6 station link and telemetry channel
+Wants=wpa_supplicant@wlan0.service
+After=wpa_supplicant@wlan0.service network-pre.target
+
+[Service]
+Type=simple
+# Passphrase stays out of argv (visible in /proc): put
+#   WIFI6_PASSPHRASE=...
+# in this root-only (0600) file.
+EnvironmentFile=-/etc/wifi6-comm/credentials
+ExecStart=/usr/bin/wifi6-comm --iface wlan0 --ssid FleetNet --security sae \
+    --peer 10.20.0.1:5005 --ac vi --twt-interval-ms 1000 --no-2g4
+Restart=on-failure
+RestartSec=5
+
+# Needs to reach the wpa_supplicant socket and set SO_PRIORITY/SO_BINDTODEVICE.
+User=root
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=no
+ReadWritePaths=/tmp /var/run/wpa_supplicant
+RestrictAddressFamilies=AF_UNIX AF_INET
+MemoryMax=8M
+
+[Install]
+WantedBy=multi-user.target

@@ -1,11 +1,13 @@
 [Unit]
-Description=LTE connection manager
+Description=Cellular (3G/4G/5G) connection manager
 After=dev-ttyUSB2.device
 BindsTo=dev-ttyUSB2.device
 
 [Service]
 EnvironmentFile=/etc/tcu/vehicle.env
-ExecStart=/usr/sbin/ltecm -d /dev/ttyUSB2 -a ${TCU_APN} -H /etc/tcu/ltecm-netif-hook
+RuntimeDirectory=ltecm
+ExecStart=/usr/sbin/ltecm -d /dev/ttyUSB2 -a ${TCU_APN} -H /etc/tcu/ltecm-netif-hook \
+          -R ${TCU_RATS} -V ${TCU_MODEM_VENDOR} -S /run/ltecm/status
 Restart=always
 RestartSec=2
 # Needs to configure wwan0 through the hook

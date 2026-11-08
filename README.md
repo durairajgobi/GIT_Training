@@ -12,7 +12,7 @@ Design document: [docs/DESIGN.md](docs/DESIGN.md)
 | Path | Contents |
 |---|---|
 | `src/ecall` | eCall state machine, MSD encoder, `ecalld` |
-| `src/lte` | AT parser, LTE connection state machine, `ltecm` |
+| `src/lte` | AT parser, connection state machine, multi-RAT (2G/3G/4G/5G) policy, `ltecm` |
 | `src/bt` | Reconnection policy, HFP 1.7 codec negotiation, `btmgr` (BlueZ D-Bus) |
 | `src/pm` | Power policy, `tcu-pmd` |
 | `src/security` | AF_ALG (kernel crypto) helpers, mTLS + OCSP client, `tcu-hash`, `tcu-tls-probe` |
@@ -23,6 +23,7 @@ Design document: [docs/DESIGN.md](docs/DESIGN.md)
 | `systemd/`, `config/` | Service units and default configuration |
 | `tests/` | C unit tests, Python unit tests, HIL framework (`tcu_testkit`) and suites |
 | `devhal/` | User-space C middleware for device drivers: GPIO, I2C, SPI, UART, PWM, LCD backlight (`make -C devhal test`) |
+| `wifi6_comm/` | C++17 Wi-Fi 6 (802.11ax) station: WPA3/6 GHz join, roaming, TWT, reliable UDP telemetry ([README](wifi6_comm/README.md)) |
 
 ## Host build and tests
 
