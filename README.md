@@ -12,7 +12,7 @@ Design document: [docs/DESIGN.md](docs/DESIGN.md)
 | Path | Contents |
 |---|---|
 | `src/ecall` | eCall state machine, MSD encoder, `ecalld` |
-| `src/lte` | AT parser, LTE connection state machine, `ltecm` |
+| `src/lte` | AT parser, connection state machine, multi-RAT (2G/3G/4G/5G) policy, `ltecm` |
 | `src/bt` | Reconnection policy, HFP 1.7 codec negotiation, `btmgr` (BlueZ D-Bus) |
 | `src/pm` | Power policy, `tcu-pmd` |
 | `src/security` | AF_ALG (kernel crypto) helpers, mTLS + OCSP client, `tcu-hash`, `tcu-tls-probe` |

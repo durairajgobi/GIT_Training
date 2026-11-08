@@ -87,5 +87,35 @@ int main(void)
 	lte_sm_handle(&sm, LTE_EV_SIM_READY);
 	CHECK_EQ(lte_sm_handle(&sm, LTE_EV_REG_ROAMING), LTE_PDN_CONNECTING);
 	CHECK_EQ(lte_sm_handle(&sm, LTE_EV_STOP), LTE_OFF);
+
+	/*
+	 * Multi-RAT init: registration URCs for every domain plus the RAT
+	 * preference. Optional commands may be rejected without failing init.
+	 */
+	cfg.urc_ps = true;
+	cfg.urc_5gs = true;
+	snprintf(cfg.rat_cmd, sizeof(cfg.rat_cmd), "AT+WS46=38");
+	lte_sm_init(&sm, &cfg, &ops, &r);
+	CHECK_EQ(sm.n_init, 7);
+	lte_sm_handle(&sm, LTE_EV_START);
+	CHECK_STR(r.last, "ATE0");
+	lte_sm_handle(&sm, LTE_EV_AT_OK);
+	lte_sm_handle(&sm, LTE_EV_AT_OK);
+	CHECK_STR(r.last, "AT+CGREG=2");
+	lte_sm_handle(&sm, LTE_EV_AT_OK);
+	CHECK_STR(r.last, "AT+CEREG=2");
+	lte_sm_handle(&sm, LTE_EV_AT_OK);
+	CHECK_STR(r.last, "AT+C5GREG=2");
+	/* LTE-only modem: no 5GS registration support. */
+	CHECK_EQ(lte_sm_handle(&sm, LTE_EV_AT_ERROR), LTE_MODEM_INIT);
+	CHECK_STR(r.last, "AT+CFUN=4");
+	lte_sm_set_rat_cmd(&sm, "AT+WS46=31");
+	lte_sm_handle(&sm, LTE_EV_AT_OK);
+	CHECK_STR(r.last, "AT+WS46=31");
+	CHECK_EQ(lte_sm_handle(&sm, LTE_EV_AT_ERROR), LTE_SIM_WAIT);
+	/* Mandatory command errors still fail init. */
+	lte_sm_handle(&sm, LTE_EV_STOP);
+	lte_sm_handle(&sm, LTE_EV_START);
+	CHECK_EQ(lte_sm_handle(&sm, LTE_EV_AT_ERROR), LTE_BACKOFF);
 	CHECK_DONE();
 }
