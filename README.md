@@ -22,6 +22,7 @@ Design document: [docs/DESIGN.md](docs/DESIGN.md)
 | `docker/` | Container images and compose stack |
 | `systemd/`, `config/` | Service units and default configuration |
 | `tests/` | C unit tests, Python unit tests, HIL framework (`tcu_testkit`) and suites |
+| `wifi6_comm/` | C++17 Wi-Fi 6 (802.11ax) station: WPA3/6 GHz join, roaming, TWT, reliable UDP telemetry ([README](wifi6_comm/README.md)) |
 
 ## Host build and tests
 
